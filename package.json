@@ -1,0 +1,74 @@
+{
+  "name": "@animoca/tokenlaunchpad-ethereum-contracts",
+  "version": "1.0.0",
+  "description": "TokenLaunchpad Solidity Contracts",
+  "author": "Animoca Brands",
+  "license": "MIT",
+  "keywords": [
+    "animoca",
+    "tokenlaunchpad",
+    "ethereum",
+    "solidity",
+    "hardhat",
+    "contracts"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/animoca/tokenlaunchpad-ethereum-contracts.git"
+  },
+  "scripts": {
+    "postinstall": "animoca-setup-vscode",
+    "lint:js": "eslint \"**/*.{js,ts}\" --no-error-on-unmatched-pattern",
+    "lint:sol": "solhint \"contracts/**/*.sol\" -c node_modules/@animoca/ethereum-contracts-core/.solhint.json",
+    "lint": "run-s lint:js lint:sol",
+    "fix:js": "eslint --fix \"**/*.{js,ts}\" --no-error-on-unmatched-pattern",
+    "fix:sol": "solhint --fix \"contracts/**/*.sol\" -c node_modules/@animoca/ethereum-contracts-core/.solhint.json",
+    "fix": "run-s fix:js fix:sol",
+    "format:js": "prettier --write \"**/*.{ts,js}\"",
+    "format:sol": "prettier --write \"**/*.sol\"",
+    "format": "run-s format:js format:sol",
+    "compile": "hardhat compile --show-stack-traces",
+    "flatten": "hardhat flatten-all --show-stack-traces",
+    "smartcheck": "smartcheck -p contracts &> smartcheck.log",
+    "test": "hardhat test --show-stack-traces",
+    "coverage": "hardhat coverage --show-stack-traces",
+    "ganache": "ganache-cli -g 1000000000",
+    "gas-report": "wait-on tcp:8545 && cross-env REPORT_GAS=true hardhat --network localhost test --show-stack-traces",
+    "doc:sol": "hardhat docgen --show-stack-traces",
+    "doc": "run-s doc:sol",
+    "clean:compile": "rm -rf cache",
+    "clean:artifacts:soft": "animoca-clean-artifacts",
+    "clean:artifacts:hard": "rm -rf artifacts",
+    "clean:flatten": "rm -rf flattened",
+    "clean:smartcheck": "rm -rf smartcheck*",
+    "clean:coverage": "rm -rf coverage* .coverage*",
+    "clean:doc": "rm -rf docs",
+    "clean:contracts": "run-p clean:compile clean:artifacts:soft clean:flatten clean:smartcheck clean:coverage clean:doc",
+    "clean": "run-s clean:contracts",
+    "run-all:contracts": "run-s format fix clean:contracts clean:artifacts:hard compile flatten smartcheck test coverage doc",
+    "run-all": "run-s run-all:contracts",
+    "prepack:contracts": "run-s clean:artifacts:hard compile clean",
+    "prepack": "run-s prepack:contracts",
+    "release:private": "animoca-release-package private",
+    "release:public": "animoca-release-package public"
+  },
+  "devDependencies": {
+    "@animoca/ethereum-contracts-assets-1.1.5": "npm:@animoca/ethereum-contracts-assets@1.1.5",
+    "@animoca/ethereum-contracts-core": "^1.1.2",
+    "@animoca/ethereum-contracts-core-1.1.2": "npm:@animoca/ethereum-contracts-core@1.1.2",
+    "@animoca/ethereum-contracts-sale": "^2.0.0",
+    "@animoca/ethereum-contracts-sale-2.0.0": "npm:@animoca/ethereum-contracts-sale@2.0.0",
+    "@animoca/ethereum-hardhat-bootstrap": "^1.0.1",
+    "@openzeppelin/contracts": "=3.4.0",
+    "bip39": "^3.0.4",
+    "ethereum-universal-forwarder": "=0.1.4",
+    "ethereumjs-wallet": "^1.0.1",
+    "hardhat": "^2.6.2"
+  },
+  "peerDependencies": {
+    "@animoca/ethereum-hardhat-bootstrap": "^1.0.1"
+  },
+  "engines": {
+    "node": ">=12.18 <13"
+  }
+}
