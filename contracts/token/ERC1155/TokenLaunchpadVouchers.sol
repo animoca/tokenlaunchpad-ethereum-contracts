@@ -6,8 +6,10 @@ import {ERC1155InventoryBurnable} from "@animoca/ethereum-contracts-assets-1.1.5
 import {IERC1155InventoryMintable} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/IERC1155InventoryMintable.sol";
 import {IERC1155InventoryCreator} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/IERC1155InventoryCreator.sol";
 import {BaseMetadataURI} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/metadata/BaseMetadataURI.sol";
+import {ManagedIdentity, Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 import {MinterRole} from "@animoca/ethereum-contracts-core-1.1.2/contracts/access/MinterRole.sol";
 import {Pausable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/lifecycle/Pausable.sol";
+import {IForwarderRegistry, UsingUniversalForwarding} from "ethereum-universal-forwarder/src/solc_0.7/ERC2771/UsingUniversalForwarding.sol";
 
 /**
  * @title TokenLaunchpadVouchers
@@ -18,9 +20,15 @@ contract TokenLaunchpadVouchers is
     IERC1155InventoryCreator,
     BaseMetadataURI,
     MinterRole,
-    Pausable
+    Pausable,
+    Recoverable,
+    UsingUniversalForwarding
 {
-    constructor() MinterRole(msg.sender) Pausable(false) {}
+    constructor(IForwarderRegistry forwarderRegistry, address universalForwarder)
+        MinterRole(msg.sender)
+        Pausable(false)
+        UsingUniversalForwarding(forwarderRegistry, universalForwarder)
+    {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return
@@ -162,5 +170,13 @@ contract TokenLaunchpadVouchers is
     function unpause() external virtual {
         _requireOwnership(_msgSender());
         _unpause();
+    }
+
+    function _msgSender() internal view virtual override(ManagedIdentity, UsingUniversalForwarding) returns (address payable) {
+        return UsingUniversalForwarding._msgSender();
+    }
+
+    function _msgData() internal view virtual override(ManagedIdentity, UsingUniversalForwarding) returns (bytes memory ret) {
+        return UsingUniversalForwarding._msgData();
     }
 }

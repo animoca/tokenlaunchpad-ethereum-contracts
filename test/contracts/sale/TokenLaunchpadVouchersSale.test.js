@@ -31,7 +31,7 @@ describe('TokenLaunchpadVouchersSale', function () {
     this.paymentToken = await artifacts
       .require('ERC20Mock')
       .new([purchaser], [purchaserErc20Balance], forwarderRegistry.address, universalForwarder.address, {from: deployer});
-    this.vouchers = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
+    this.vouchers = await artifacts.require('TokenLaunchpadVouchers').new(forwarderRegistry.address, universalForwarder.address, {from: deployer});
     this.sale = await artifacts
       .require('TokenLaunchpadVouchersSale')
       .new(this.vouchers.address, payoutWallet, skusCapacity, tokensPerSkuCapacity, {from: deployer});

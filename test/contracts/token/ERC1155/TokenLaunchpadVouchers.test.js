@@ -1,8 +1,8 @@
-const {artifacts} = require('hardhat');
+const {artifacts, accounts} = require('hardhat');
 const {shouldBehaveLikeERC1155} = require('@animoca/ethereum-contracts-assets-1.1.5/test/contracts/token/ERC1155/behaviors/ERC1155.behavior');
 
 const implementation = {
-  contractName: 'TokenLaunchpadVouchers',
+  contractName: 'TokenLaunchpadVouchersMock',
   nfMaskLength: 32,
   revertMessages: {
     // ERC1155
@@ -62,7 +62,9 @@ const implementation = {
     },
   },
   deploy: async function (deployer) {
-    return artifacts.require('TokenLaunchpadVouchers').new({from: deployer});
+    const forwarderRegistry = await artifacts.require('ForwarderRegistry').new({from: deployer});
+    const universalForwarder = await artifacts.require('UniversalForwarder').new({from: deployer});
+    return artifacts.require('TokenLaunchpadVouchersMock').new(forwarderRegistry.address, universalForwarder.address, {from: deployer});
   },
   mint: async function (contract, to, id, value, overrides) {
     return contract.methods['safeMint(address,uint256,uint256,bytes)'](to, id, value, '0x', overrides);
@@ -71,5 +73,15 @@ const implementation = {
 
 describe('TokenLaunchpadVouchers', function () {
   this.timeout(0);
+
+  const [deployer] = accounts;
+
+  context('_msgData()', function () {
+    it('call for 100% coverage', async function () {
+      const contract = await implementation.deploy(deployer);
+      (await contract.msgData()).should.not.be.empty;
+    });
+  });
+
   shouldBehaveLikeERC1155(implementation);
 });
