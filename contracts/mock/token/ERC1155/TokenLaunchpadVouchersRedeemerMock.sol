@@ -11,7 +11,7 @@ contract TokenLaunchpadVouchersRedeemerMock is TokenLaunchpadVouchersRedeemer {
         address tokenHolder
     ) TokenLaunchpadVouchersRedeemer(vouchersContract, tokenContract, tokenHolder) {}
 
-    function _voucherValue(uint256 tokenId) internal pure virtual override returns (uint256) {
+    function _voucherValue(uint256 tokenId) internal pure override returns (uint256) {
         return tokenId;
     }
 }

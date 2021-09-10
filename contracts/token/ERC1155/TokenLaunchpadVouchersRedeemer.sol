@@ -5,8 +5,7 @@ pragma solidity >=0.7.6 <0.8.0;
 import {ERC1155TokenReceiver} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/ERC1155TokenReceiver.sol";
 import {IERC1155InventoryBurnable} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/IERC1155InventoryBurnable.sol";
 import {IWrappedERC20, ERC20Wrapper} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/ERC20Wrapper.sol";
-import {Ownable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/access/Ownable.sol";
-import {Pausable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/lifecycle/Pausable.sol";
+import {Ownable, Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
@@ -14,7 +13,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
  * An ERC1155TokenReceiver contract implementation used to redeem (burn) TokenLaunchpad vouchers for
  * their representative value in a given ERC20 token.
  */
-abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Ownable, Pausable {
+abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Recoverable {
     using ERC20Wrapper for IWrappedERC20;
     using SafeMath for uint256;
 
@@ -32,7 +31,7 @@ abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Ownabl
         IERC1155InventoryBurnable vouchersContract_,
         IWrappedERC20 tokenContract_,
         address tokenHolder_
-    ) Ownable(msg.sender) Pausable(false) {
+    ) Ownable(msg.sender) {
         vouchersContract = vouchersContract_;
         tokenContract = tokenContract_;
         tokenHolder = tokenHolder_;
@@ -49,7 +48,6 @@ abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Ownabl
         uint256 value,
         bytes calldata /*data*/
     ) external virtual override returns (bytes4) {
-        _requireNotPaused();
         require(msg.sender == address(vouchersContract), "Redeemer: wrong sender");
         vouchersContract.burnFrom(address(this), id, value);
         uint256 tokenAmount = _voucherValue(id).mul(value);
@@ -68,7 +66,6 @@ abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Ownabl
         uint256[] calldata values,
         bytes calldata /*data*/
     ) external virtual override returns (bytes4) {
-        _requireNotPaused();
         require(msg.sender == address(vouchersContract), "Redeemer: wrong sender");
         vouchersContract.batchBurnFrom(address(this), ids, values);
         uint256 tokenAmount;
@@ -91,32 +88,10 @@ abstract contract TokenLaunchpadVouchersRedeemer is ERC1155TokenReceiver, Ownabl
     }
 
     /**
-     * Pauses the contract.
-     * @dev Reverts if the sender is not the contract owner.
-     * @dev Reverts if the contract is already paused.
-     * @dev Emits a {Pausable-Paused} event.
-     */
-    function pause() external virtual {
-        _requireOwnership(_msgSender());
-        _pause();
-    }
-
-    /**
-     * Unpauses the contract.
-     * @dev Reverts if the sender is not the contract owner.
-     * @dev Reverts if the contract is not paused.
-     * @dev Emits a {Pausable-Unpaused} event.
-     */
-    function unpause() external virtual {
-        _requireOwnership(_msgSender());
-        _unpause();
-    }
-
-    /**
      * Validates the validity of the voucher for a specific redeemer deployment and returns the value of the voucher.
      * @dev Reverts if the voucher is not valid for this redeemer.
      * @param tokenId the id of the voucher.
      * @return the value of the voucher in ERC20 token.
      */
-    function _voucherValue(uint256 tokenId) internal pure virtual returns (uint256);
+    function _voucherValue(uint256 tokenId) internal view virtual returns (uint256);
 }

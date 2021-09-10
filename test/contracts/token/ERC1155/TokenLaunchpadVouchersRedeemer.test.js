@@ -32,14 +32,6 @@ describe('TokenLaunchpadVouchersRedeemer', function () {
   });
 
   describe('onERC1155Received()', function () {
-    it('reverts when the contract is paused', async function () {
-      await this.redeemer.pause({from: deployer});
-      await expectRevert(
-        this.vouchers.safeTransferFrom(purchaser, this.redeemer.address, voucherId, One, EmptyByte, {from: purchaser}),
-        'Pausable: paused'
-      );
-    });
-
     it('reverts when the sender is not the registered vouchers contract', async function () {
       const vouchersOther = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
       await vouchersOther.createCollection(voucherId, {from: deployer});
@@ -105,14 +97,6 @@ describe('TokenLaunchpadVouchersRedeemer', function () {
   });
 
   describe('onERC1155BatchReceived()', function () {
-    it('reverts when the contract is paused', async function () {
-      await this.redeemer.pause({from: deployer});
-      await expectRevert(
-        this.vouchers.safeBatchTransferFrom(purchaser, this.redeemer.address, [voucherId], [One], EmptyByte, {from: purchaser}),
-        'Pausable: paused'
-      );
-    });
-
     it('reverts when the sender is not the registered vouchers contract', async function () {
       const vouchersOther = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
       await vouchersOther.createCollection(voucherId, {from: deployer});
@@ -190,27 +174,6 @@ describe('TokenLaunchpadVouchersRedeemer', function () {
     it('sets the new token holder', async function () {
       await this.redeemer.setTokenHolder(other, {from: deployer});
       (await this.redeemer.tokenHolder()).should.be.equal(other);
-    });
-  });
-
-  describe('pause()', function () {
-    it('reverts when the sender is not the contract owner', async function () {
-      await expectRevert(this.redeemer.pause({from: other}), 'Ownable: not the owner');
-    });
-
-    it('reverts when the contract is already paused', async function () {
-      await this.redeemer.pause({from: deployer});
-      await expectRevert(this.redeemer.pause({from: deployer}), 'Pausable: paused');
-    });
-  });
-
-  describe('unpause()', function () {
-    it('reverts when the sender is not the contract owner', async function () {
-      await expectRevert(this.redeemer.unpause({from: other}), 'Ownable: not the owner');
-    });
-
-    it('reverts when the contract is not paused', async function () {
-      await expectRevert(this.redeemer.unpause({from: deployer}), 'Pausable: not paused');
     });
   });
 });

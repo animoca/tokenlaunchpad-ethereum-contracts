@@ -3,12 +3,13 @@
 pragma solidity >=0.7.6 <0.8.0;
 
 import {Sale, FixedPricesSale} from "@animoca/ethereum-contracts-sale-2.0.0/contracts/sale/FixedPricesSale.sol";
+import {Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 
 /**
  * @title TokenLaunchpaVouchersSale
  * A FixedPricesSale contract that handles the purchase and delivery of TokenLaunchpad vouchers.
  */
-contract TokenLaunchpadVouchersSale is FixedPricesSale {
+contract TokenLaunchpadVouchersSale is FixedPricesSale, Recoverable {
     IVouchersContract public immutable vouchersContract;
 
     mapping(bytes32 => uint256) public skuTokenIds;
@@ -51,11 +52,9 @@ contract TokenLaunchpadVouchersSale is FixedPricesSale {
         bytes32 sku,
         uint256 totalSupply,
         uint256 maxQuantityPerPurchase,
-        // address notificationsReceiver,
         uint256 tokenId
     ) external {
         _requireOwnership(_msgSender());
-        // _requirePaused();
         require(vouchersContract.isFungible(tokenId), "Sale: not a fungible token");
         skuTokenIds[sku] = tokenId;
         _createSku(sku, totalSupply, maxQuantityPerPurchase, address(0));
