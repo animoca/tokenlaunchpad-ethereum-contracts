@@ -1,6 +1,6 @@
 {
   "name": "@animoca/tokenlaunchpad-ethereum-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "TokenLaunchpad Solidity Contracts",
   "author": "Animoca Brands",
   "license": "MIT",

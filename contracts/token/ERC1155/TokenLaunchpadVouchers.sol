@@ -31,10 +31,7 @@ contract TokenLaunchpadVouchers is
     {}
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IERC1155InventoryMintable).interfaceId ||
-            interfaceId == type(IERC1155InventoryCreator).interfaceId ||
-            super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC1155InventoryCreator).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /**
