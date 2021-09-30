@@ -2,8 +2,8 @@
 
 pragma solidity >=0.7.6 <0.8.0;
 
-import {ERC1155TokenReceiver} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/ERC1155TokenReceiver.sol";
-import {IERC1155InventoryBurnable} from "@animoca/ethereum-contracts-assets-1.1.5/contracts/token/ERC1155/IERC1155InventoryBurnable.sol";
+import {ERC1155TokenReceiver} from "@animoca/ethereum-contracts-assets-2.0.0/contracts/token/ERC1155/ERC1155TokenReceiver.sol";
+import {IERC1155InventoryBurnable} from "@animoca/ethereum-contracts-assets-2.0.0/contracts/token/ERC1155/IERC1155InventoryBurnable.sol";
 import {IWrappedERC20, ERC20Wrapper} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/ERC20Wrapper.sol";
 import {Ownable, Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";

@@ -1,6 +1,6 @@
 {
   "name": "@animoca/tokenlaunchpad-ethereum-contracts",
-  "version": "1.1.0",
+  "version": "2.0.0_pre.0",
   "description": "TokenLaunchpad Solidity Contracts",
   "author": "Animoca Brands",
   "license": "MIT",
@@ -53,7 +53,7 @@
     "release:public": "animoca-release-package public"
   },
   "devDependencies": {
-    "@animoca/ethereum-contracts-assets-1.1.5": "npm:@animoca/ethereum-contracts-assets@1.1.5",
+    "@animoca/ethereum-contracts-assets-2.0.0": "npm:@animoca/ethereum-contracts-assets@2.0.0-pre.0",
     "@animoca/ethereum-contracts-core": "^1.1.2",
     "@animoca/ethereum-contracts-core-1.1.2": "npm:@animoca/ethereum-contracts-core@1.1.2",
     "@animoca/ethereum-contracts-sale": "^2.0.0",

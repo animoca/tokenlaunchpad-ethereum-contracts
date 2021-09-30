@@ -15,12 +15,14 @@ const [deployer, purchaser, tokenHolder, other] = accounts;
 describe('TokenLaunchpadVouchersRedeemer', function () {
   const fixtureLoader = createFixtureLoader(accounts, web3.eth.currentProvider);
   const fixture = async function () {
-    const forwarderRegistry = await artifacts.require('ForwarderRegistry').new({from: deployer});
-    const universalForwarder = await artifacts.require('UniversalForwarder').new({from: deployer});
+    this.forwarderRegistry = await artifacts.require('ForwarderRegistry').new({from: deployer});
+    this.universalForwarder = await artifacts.require('UniversalForwarder').new({from: deployer});
     this.token = await artifacts
       .require('ERC20Mock')
-      .new([tokenHolder], [tokenTotalSupply], forwarderRegistry.address, universalForwarder.address, {from: deployer});
-    this.vouchers = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
+      .new([tokenHolder], [tokenTotalSupply], this.forwarderRegistry.address, this.universalForwarder.address, {from: deployer});
+    this.vouchers = await artifacts
+      .require('ERC1155InventoryBurnableMock')
+      .new(this.forwarderRegistry.address, this.universalForwarder.address, {from: deployer});
     await this.vouchers.createCollection(voucherId, {from: deployer});
     await this.vouchers.safeMint(purchaser, voucherId, voucherTotalSupply, EmptyByte);
     this.redeemer = await artifacts.require('TokenLaunchpadVouchersRedeemerMock').new(this.vouchers.address, this.token.address, tokenHolder);
@@ -33,7 +35,9 @@ describe('TokenLaunchpadVouchersRedeemer', function () {
 
   describe('onERC1155Received()', function () {
     it('reverts when the sender is not the registered vouchers contract', async function () {
-      const vouchersOther = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
+      const vouchersOther = await artifacts
+        .require('ERC1155InventoryBurnableMock')
+        .new(this.forwarderRegistry.address, this.universalForwarder.address, {from: deployer});
       await vouchersOther.createCollection(voucherId, {from: deployer});
       await vouchersOther.safeMint(purchaser, voucherId, voucherTotalSupply, EmptyByte);
       await expectRevert(
@@ -98,7 +102,9 @@ describe('TokenLaunchpadVouchersRedeemer', function () {
 
   describe('onERC1155BatchReceived()', function () {
     it('reverts when the sender is not the registered vouchers contract', async function () {
-      const vouchersOther = await artifacts.require('ERC1155InventoryBurnableMock').new({from: deployer});
+      const vouchersOther = await artifacts
+        .require('ERC1155InventoryBurnableMock')
+        .new(this.forwarderRegistry.address, this.universalForwarder.address, {from: deployer});
       await vouchersOther.createCollection(voucherId, {from: deployer});
       await vouchersOther.safeMint(purchaser, voucherId, voucherTotalSupply, EmptyByte);
       await expectRevert(

@@ -1,5 +1,5 @@
 const {artifacts, accounts} = require('hardhat');
-const {shouldBehaveLikeERC1155} = require('@animoca/ethereum-contracts-assets-1.1.5/test/contracts/token/ERC1155/behaviors/ERC1155.behavior');
+const {shouldBehaveLikeERC1155} = require('@animoca/ethereum-contracts-assets-2.0.0/test/contracts/token/ERC1155/behaviors/ERC1155.behavior');
 
 const implementation = {
   contractName: 'TokenLaunchpadVouchersMock',
@@ -16,7 +16,6 @@ const implementation = {
     InsufficientBalance: 'Inventory: not enough balance',
     TransferRejected: 'Inventory: transfer refused',
     SupplyOverflow: 'Inventory: supply overflow',
-    NotMinter: 'MinterRole: not a Minter',
 
     // ERC1155Inventory
     ExistingCollection: 'Inventory: existing collection',
@@ -28,10 +27,9 @@ const implementation = {
     WrongNFTValue: 'Inventory: wrong NFT value',
     NotNFT: 'Inventory: not an NFT',
 
-    // Pausable
-    NotPauser: 'Ownable: not the owner',
-    AlreadyPaused: 'Pausable: paused',
-    AlreadyUnpaused: 'Pausable: not paused',
+    // Admin
+    NotMinter: 'MinterRole: not a Minter',
+    NotContractOwner: 'Ownable: not the owner',
   },
   interfaces: {
     ERC1155: true,
@@ -39,8 +37,8 @@ const implementation = {
     ERC1155Inventory: true,
     ERC1155InventoryCreator: true,
     ERC1155InventoryBurnable: true,
-    Pausable: true,
   },
+  features: {BaseMetadataURI: true},
   methods: {
     // ERC1155
     'safeMint(address,uint256,uint256,bytes)': async function (contract, to, id, value, data, overrides) {
