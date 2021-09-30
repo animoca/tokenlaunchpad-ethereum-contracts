@@ -6,7 +6,7 @@ import {Sale, FixedPricesSale} from "@animoca/ethereum-contracts-sale-2.0.0/cont
 import {Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 
 /**
- * @title TokenLaunchpaVouchersSale
+ * @title TokenLaunchpad Vouchers Sale
  * A FixedPricesSale contract that handles the purchase and delivery of TokenLaunchpad vouchers.
  */
 contract TokenLaunchpadVouchersSale is FixedPricesSale, Recoverable {
