@@ -1,4 +1,6 @@
 const {artifacts, accounts} = require('hardhat');
+const {constants} = require('@animoca/ethereum-contracts-core');
+const {ZeroAddress} = constants;
 const {shouldBehaveLikeERC1155} = require('@animoca/ethereum-contracts-assets-2.0.0/test/contracts/token/ERC1155/behaviors/ERC1155.behavior');
 
 const implementation = {
@@ -62,7 +64,7 @@ const implementation = {
   deploy: async function (deployer) {
     const forwarderRegistry = await artifacts.require('ForwarderRegistry').new({from: deployer});
     const universalForwarder = await artifacts.require('UniversalForwarder').new({from: deployer});
-    return artifacts.require('TokenLaunchpadVouchersMock').new(forwarderRegistry.address, universalForwarder.address, {from: deployer});
+    return artifacts.require('TokenLaunchpadVouchersMock').new(forwarderRegistry.address, ZeroAddress, {from: deployer});
   },
   mint: async function (contract, to, id, value, overrides) {
     return contract.methods['safeMint(address,uint256,uint256,bytes)'](to, id, value, '0x', overrides);
