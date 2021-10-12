@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+
+- Identical to 2.0.0, but publishing on npmjs bugged.
+
 ## 2.0.0
 
 ### Breaking changes
