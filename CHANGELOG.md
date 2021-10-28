@@ -4,7 +4,7 @@
 
 ### New features
 
-- Added `TokenLaunchpadVoucherPacksSale.sol`.
+- Added `TokenLaunchpadVoucherPacksSale.sol` which handles multiple tokens delivery and start/end timestamp per sku.
 
 ## 2.0.1
 

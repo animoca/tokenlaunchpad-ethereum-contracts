@@ -50,7 +50,14 @@ describe('TokenLaunchpadVoucherPacksSale', function () {
 
   describe('createSku()', function () {
     it('reverts when not called by the contract owner', async function () {
-      await expectRevert(this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, {from: other}), 'Ownable: not the owner');
+      await expectRevert(
+        this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, Zero, Zero, {from: other}),
+        'Ownable: not the owner'
+      );
+    });
+
+    it('reverts with an empty tokens list', async function () {
+      await expectRevert(this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, [], Zero, Zero, {from: deployer}), 'Sale: empty tokens');
     });
 
     it('reverts when a tokenId does not represent a fungible token', async function () {
@@ -60,6 +67,8 @@ describe('TokenLaunchpadVoucherPacksSale', function () {
           totalSupply,
           maxQuantityPerPurchase,
           tokenIds.map(() => nftId),
+          Zero,
+          Zero,
           {from: deployer}
         ),
         'Sale: not a fungible token'
@@ -70,41 +79,97 @@ describe('TokenLaunchpadVoucherPacksSale', function () {
           totalSupply,
           maxQuantityPerPurchase,
           tokenIds.map(() => nfcId),
+          Zero,
+          Zero,
           {from: deployer}
         ),
         'Sale: not a fungible token'
       );
     });
 
-    it('sets the sku tokenIds', async function () {
-      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, {from: deployer});
-      (await this.sale.skuTokenIds(sku, 0)).should.be.bignumber.equal(new BN(tokenIds[0]));
-      (await this.sale.skuTokenIds(sku, 1)).should.be.bignumber.equal(new BN(tokenIds[1]));
-      (await this.sale.skuTokenIds(sku, 2)).should.be.bignumber.equal(new BN(tokenIds[2]));
-      (await this.sale.skuTokenIds(sku, 3)).should.be.bignumber.equal(new BN(tokenIds[3]));
+    it('sets the sku additional info', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, One, Two, {from: deployer});
+      const info = await this.sale.getSkuAdditionalInfo(sku);
+      for (let i = 0; i < tokenIds.length; ++i) {
+        info.tokenIds[i].should.be.bignumber.equal(new BN(tokenIds[i]));
+      }
+      info.startTimestamp.should.be.bignumber.equal(One);
+      info.endTimestamp.should.be.bignumber.equal(Two);
     });
   });
 
   describe('purchaseFor()', function () {
-    const quantity = Two;
-
-    beforeEach(async function () {
-      await this.paymentToken.approve(this.sale.address, MaxUInt256, {from: purchaser});
-      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, {from: deployer});
+    it('reverts is the sku sale has not started', async function () {
+      const tomorrow = Math.trunc(Date.now() / 1000) + 86400;
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, tomorrow, Zero, {from: deployer});
       await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
       await this.sale.start({from: deployer});
-      this.receipt = await this.sale.purchaseFor(recipient, this.paymentToken.address, sku, quantity, EmptyByte, {
-        from: purchaser,
+      await this.paymentToken.approve(this.sale.address, MaxUInt256, {from: purchaser});
+      await expectRevert(
+        this.sale.purchaseFor(recipient, this.paymentToken.address, sku, quantity, EmptyByte, {
+          from: purchaser,
+        }),
+        'Sale: not started yet'
+      );
+    });
+
+    it('reverts is the sku sale has ended', async function () {
+      const yesterday = Math.trunc(Date.now() / 1000) - 86400;
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, Zero, yesterday, {from: deployer});
+      await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
+      await this.sale.start({from: deployer});
+      await this.paymentToken.approve(this.sale.address, MaxUInt256, {from: purchaser});
+      await expectRevert(
+        this.sale.purchaseFor(recipient, this.paymentToken.address, sku, quantity, EmptyByte, {
+          from: purchaser,
+        }),
+        'Sale: already ended'
+      );
+    });
+
+    const quantity = Two;
+
+    context('single token delivery', function () {
+      beforeEach(async function () {
+        await this.paymentToken.approve(this.sale.address, MaxUInt256, {from: purchaser});
+        await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, [tokenIds[0]], Zero, Zero, {from: deployer});
+        await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
+        await this.sale.start({from: deployer});
+        this.receipt = await this.sale.purchaseFor(recipient, this.paymentToken.address, sku, quantity, EmptyByte, {
+          from: purchaser,
+        });
+      });
+
+      it('emits a TransferSingle minting event', async function () {
+        expectEvent.inTransaction(this.receipt.tx, this.vouchers, 'TransferSingle', {
+          _operator: this.sale.address,
+          _from: ZeroAddress,
+          _to: recipient,
+          _id: tokenIds[0],
+          _value: quantity,
+        });
       });
     });
 
-    it('emits a TransferBatch minting event', async function () {
-      expectEvent.inTransaction(this.receipt.tx, this.vouchers, 'TransferBatch', {
-        _operator: this.sale.address,
-        _from: ZeroAddress,
-        _to: recipient,
-        _ids: tokenIds,
-        _values: tokenIds.map(() => quantity),
+    context('multiple token delivery', function () {
+      beforeEach(async function () {
+        await this.paymentToken.approve(this.sale.address, MaxUInt256, {from: purchaser});
+        await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, Zero, Zero, {from: deployer});
+        await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
+        await this.sale.start({from: deployer});
+        this.receipt = await this.sale.purchaseFor(recipient, this.paymentToken.address, sku, quantity, EmptyByte, {
+          from: purchaser,
+        });
+      });
+
+      it('emits a TransferBatch minting event', async function () {
+        expectEvent.inTransaction(this.receipt.tx, this.vouchers, 'TransferBatch', {
+          _operator: this.sale.address,
+          _from: ZeroAddress,
+          _to: recipient,
+          _ids: tokenIds,
+          _values: tokenIds.map(() => quantity),
+        });
       });
     });
   });
