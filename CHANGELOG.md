@@ -1,5 +1,16 @@
 # Changelog
 
+
+## 2.2.0
+
+### New features
+
+- Added `updateSkuTimestamps(bytes32,uint256,uint256)` and `canPurchaseSku(bytes32)` functions to `TokenLaunchpadVoucherPacksSale.sol`.
+
+### Bug fixes
+
+- `TokenLaunchpadVoucherPacksSale.getSkuAdditionalInfo(bytes32)` correctly reverts if the SKU does not exist.
+
 ## 2.1.0
 
 ### New features

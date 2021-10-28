@@ -21,6 +21,9 @@ const tokenIds = [makeFungibleCollectionId(1), makeFungibleCollectionId(2), make
 const nftId = makeNonFungibleTokenId(1, 1, nfMaskLength);
 const nfcId = makeNonFungibleCollectionId(1, nfMaskLength);
 
+const yesterday = Math.trunc(Date.now() / 1000) - 86400;
+const tomorrow = Math.trunc(Date.now() / 1000) + 86400;
+
 const [deployer, payoutWallet, purchaser, recipient, other] = accounts;
 
 describe('TokenLaunchpadVoucherPacksSale', function () {
@@ -98,9 +101,59 @@ describe('TokenLaunchpadVoucherPacksSale', function () {
     });
   });
 
+  describe('getSkuAdditionalInfo()', function () {
+    it('reverts if the sku does not exist', async function () {
+      await expectRevert(this.sale.getSkuAdditionalInfo(sku), 'Sale: non-existent sku');
+    });
+  });
+
+  describe('updateSkuTimestamps()', function () {
+    it('reverts when not called by the contract owner', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, One, Two, {from: deployer});
+      await expectRevert(this.sale.updateSkuTimestamps(sku, Zero, Zero, {from: other}), 'Ownable: not the owner');
+    });
+
+    it('reverts if the sku does not exist', async function () {
+      await expectRevert(this.sale.updateSkuTimestamps(sku, Zero, Zero, {from: deployer}), 'Sale: non-existent sku');
+    });
+
+    it('updates the sku timestamps', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, One, Two, {from: deployer});
+      await this.sale.updateSkuTimestamps(sku, Two, Three, {from: deployer});
+      const info = await this.sale.getSkuAdditionalInfo(sku);
+      info.startTimestamp.should.be.bignumber.equal(Two);
+      info.endTimestamp.should.be.bignumber.equal(Three);
+    });
+  });
+
+  describe('canPurchaseSku()', function () {
+    it('reverts if the sku does not exist', async function () {
+      await expectRevert(this.sale.canPurchaseSku(sku), 'Sale: non-existent sku');
+    });
+
+    it('returns true if the sale has started and has not ended', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, yesterday, tomorrow, {from: deployer});
+      (await this.sale.canPurchaseSku(sku)).should.be.true;
+    });
+
+    it('returns true if the sale has started and has no end', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, yesterday, Zero, {from: deployer});
+      (await this.sale.canPurchaseSku(sku)).should.be.true;
+    });
+
+    it('returns false if the sale has not started', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, tomorrow, tomorrow + 1, {from: deployer});
+      (await this.sale.canPurchaseSku(sku)).should.be.false;
+    });
+
+    it('returns false if the sale has ended', async function () {
+      await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, yesterday, yesterday + 1, {from: deployer});
+      (await this.sale.canPurchaseSku(sku)).should.be.false;
+    });
+  });
+
   describe('purchaseFor()', function () {
     it('reverts is the sku sale has not started', async function () {
-      const tomorrow = Math.trunc(Date.now() / 1000) + 86400;
       await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, tomorrow, Zero, {from: deployer});
       await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
       await this.sale.start({from: deployer});
@@ -114,7 +167,6 @@ describe('TokenLaunchpadVoucherPacksSale', function () {
     });
 
     it('reverts is the sku sale has ended', async function () {
-      const yesterday = Math.trunc(Date.now() / 1000) - 86400;
       await this.sale.createSku(sku, totalSupply, maxQuantityPerPurchase, tokenIds, Zero, yesterday, {from: deployer});
       await this.sale.updateSkuPricing(sku, [this.paymentToken.address], [erc20Price], {from: deployer});
       await this.sale.start({from: deployer});

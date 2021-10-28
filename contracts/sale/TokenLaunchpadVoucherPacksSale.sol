@@ -38,19 +38,6 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         vouchersContract = vouchersContract_;
     }
 
-    function getSkuAdditionalInfo(bytes32 sku)
-        public
-        view
-        returns (
-            uint256[] memory tokenIds,
-            uint256 startTimestamp,
-            uint256 endTimestamp
-        )
-    {
-        SkuAdditionalInfo memory info = _skuAdditionalInfo[sku];
-        return (info.tokenIds, info.startTimestamp, info.endTimestamp);
-    }
-
     /**
      * Creates an SKU.
      * @dev Reverts if `totalSupply` is zero.
@@ -83,14 +70,68 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         _createSku(sku, totalSupply, maxQuantityPerPurchase, address(0));
     }
 
+    /**
+     * Updates start and end timestamps of a SKU.
+     * @dev Reverts if not sent by the contract owner.
+     * @dev Reverts if the SKU does not exist.
+     * @param sku the SKU identifier.
+     * @param startTimestamp The start timestamp of the sale.
+     * @param endTimestamp The end timestamp of the sale, or zero to indicate there is no end.
+     */
+    function updateSkuTimestamps(
+        bytes32 sku,
+        uint256 startTimestamp,
+        uint256 endTimestamp
+    ) external {
+        _requireOwnership(_msgSender());
+        require(_skuInfos[sku].totalSupply != 0, "Sale: non-existent sku");
+        SkuAdditionalInfo storage info = _skuAdditionalInfo[sku];
+        info.startTimestamp = startTimestamp;
+        info.endTimestamp = endTimestamp;
+    }
+
+    /**
+     * Gets the additional sku info.
+     * @dev Reverts if the SKU does not exist.
+     * @param sku the SKU identifier.
+     * @return tokenIds The identifiers of the tokens delivered via this SKU.
+     * @return startTimestamp The start timestamp of the SKU sale.
+     * @return endTimestamp The end timestamp of the SKU sale (zero if there is no end).
+     */
+    function getSkuAdditionalInfo(bytes32 sku)
+        external
+        view
+        returns (
+            uint256[] memory tokenIds,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        )
+    {
+        require(_skuInfos[sku].totalSupply != 0, "Sale: non-existent sku");
+        SkuAdditionalInfo memory info = _skuAdditionalInfo[sku];
+        return (info.tokenIds, info.startTimestamp, info.endTimestamp);
+    }
+
+    /**
+     * Returns whether a SKU is currently within the sale time range.
+     * @dev Reverts if the SKU does not exist.
+     * @param sku the SKU identifier.
+     * @return true if `sku` is currently within the sale time range, false otherwise.
+     */
+    function canPurchaseSku(bytes32 sku) external view returns (bool) {
+        require(_skuInfos[sku].totalSupply != 0, "Sale: non-existent sku");
+        SkuAdditionalInfo memory info = _skuAdditionalInfo[sku];
+        return block.timestamp > info.startTimestamp && (info.endTimestamp == 0 || block.timestamp < info.endTimestamp);
+    }
+
     /// @inheritdoc Sale
     function _delivery(PurchaseData memory purchase) internal override {
         super._delivery(purchase);
         SkuAdditionalInfo memory info = _skuAdditionalInfo[purchase.sku];
         uint256 startTimestamp = info.startTimestamp;
         uint256 endTimestamp = info.endTimestamp;
-        require(startTimestamp < block.timestamp, "Sale: not started yet");
-        require(endTimestamp == 0 || endTimestamp > block.timestamp, "Sale: already ended");
+        require(block.timestamp > startTimestamp, "Sale: not started yet");
+        require(endTimestamp == 0 || block.timestamp < endTimestamp, "Sale: already ended");
 
         uint256 length = info.tokenIds.length;
         if (length == 1) {
