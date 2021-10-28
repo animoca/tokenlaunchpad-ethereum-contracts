@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0
+
+### New features
+
+- Added `TokenLaunchpadVoucherPacksSale.sol` which handles multiple tokens delivery and start/end timestamp per sku.
+
 ## 2.0.1
 
 - Identical to 2.0.0, but publishing on npmjs bugged.

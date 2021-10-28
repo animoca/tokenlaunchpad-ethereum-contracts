@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.7.6 <0.8.0;
+
+import {Sale, FixedPricesSale} from "@animoca/ethereum-contracts-sale-2.0.0/contracts/sale/FixedPricesSale.sol";
+import {Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
+
+/**
+ * @title TokenLaunchpad Vouchers Sale
+ * A FixedPricesSale contract that handles the purchase and delivery of TokenLaunchpad vouchers.
+ */
+contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
+    IVouchersContract public immutable vouchersContract;
+
+    struct SkuAdditionalInfo {
+        uint256[] tokenIds;
+        uint256 startTimestamp;
+        uint256 endTimestamp;
+    }
+
+    mapping(bytes32 => SkuAdditionalInfo) internal _skuAdditionalInfo;
+
+    /**
+     * Constructor.
+     * @dev Emits the `MagicValues` event.
+     * @dev Emits the `Paused` event.
+     * @param vouchersContract_ The inventory contract from which the sale supply is attributed from.
+     * @param payoutWallet the payout wallet.
+     * @param skusCapacity the cap for the number of managed SKUs.
+     * @param tokensPerSkuCapacity the cap for the number of tokens managed per SKU.
+     */
+    constructor(
+        IVouchersContract vouchersContract_,
+        address payable payoutWallet,
+        uint256 skusCapacity,
+        uint256 tokensPerSkuCapacity
+    ) FixedPricesSale(payoutWallet, skusCapacity, tokensPerSkuCapacity) {
+        vouchersContract = vouchersContract_;
+    }
+
+    function getSkuAdditionalInfo(bytes32 sku)
+        public
+        view
+        returns (
+            uint256[] memory tokenIds,
+            uint256 startTimestamp,
+            uint256 endTimestamp
+        )
+    {
+        SkuAdditionalInfo memory info = _skuAdditionalInfo[sku];
+        return (info.tokenIds, info.startTimestamp, info.endTimestamp);
+    }
+
+    /**
+     * Creates an SKU.
+     * @dev Reverts if `totalSupply` is zero.
+     * @dev Reverts if `sku` already exists.
+     * @dev Reverts if the update results in too many SKUs.
+     * @dev Reverts if one of `tokenIds` is not a fungible token identifier.
+     * @dev Emits the `SkuCreation` event.
+     * @param sku The SKU identifier.
+     * @param totalSupply The initial total supply.
+     * @param maxQuantityPerPurchase The maximum allowed quantity for a single purchase.
+     * @param tokenIds The inventory contract token IDs to associate with the SKU, used for purchase delivery.
+     * @param startTimestamp The start timestamp of the sale.
+     * @param endTimestamp The end timestamp of the sale, or zero to indicate there is no end.
+     */
+    function createSku(
+        bytes32 sku,
+        uint256 totalSupply,
+        uint256 maxQuantityPerPurchase,
+        uint256[] calldata tokenIds,
+        uint256 startTimestamp,
+        uint256 endTimestamp
+    ) external {
+        _requireOwnership(_msgSender());
+        uint256 length = tokenIds.length;
+        require(length != 0, "Sale: empty tokens");
+        for (uint256 i; i != length; ++i) {
+            require(vouchersContract.isFungible(tokenIds[i]), "Sale: not a fungible token");
+        }
+        _skuAdditionalInfo[sku] = SkuAdditionalInfo(tokenIds, startTimestamp, endTimestamp);
+        _createSku(sku, totalSupply, maxQuantityPerPurchase, address(0));
+    }
+
+    /// @inheritdoc Sale
+    function _delivery(PurchaseData memory purchase) internal override {
+        super._delivery(purchase);
+        SkuAdditionalInfo memory info = _skuAdditionalInfo[purchase.sku];
+        uint256 startTimestamp = info.startTimestamp;
+        uint256 endTimestamp = info.endTimestamp;
+        require(startTimestamp < block.timestamp, "Sale: not started yet");
+        require(endTimestamp == 0 || endTimestamp > block.timestamp, "Sale: already ended");
+
+        uint256 length = info.tokenIds.length;
+        if (length == 1) {
+            vouchersContract.safeMint(purchase.recipient, info.tokenIds[0], purchase.quantity, "");
+        } else {
+            uint256 purchaseQuantity = purchase.quantity;
+            uint256[] memory quantities = new uint256[](length);
+            for (uint256 i; i != length; ++i) {
+                quantities[i] = purchaseQuantity;
+            }
+            vouchersContract.safeBatchMint(purchase.recipient, info.tokenIds, quantities, "");
+        }
+    }
+}
+
+interface IVouchersContract {
+    function isFungible(uint256 id) external pure returns (bool);
+
+    function safeMint(
+        address to,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) external;
+
+    function safeBatchMint(
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external;
+}
