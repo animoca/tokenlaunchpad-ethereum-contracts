@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1
+
+### New features
+
+- Added `UMADMock.sol` with 8 decimals.
 
 ## 2.2.0
 
