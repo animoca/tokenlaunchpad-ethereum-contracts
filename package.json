@@ -61,9 +61,14 @@
     "@animoca/ethereum-hardhat-bootstrap": "^1.0.1",
     "@openzeppelin/contracts": "=3.4.0",
     "bip39": "^3.0.4",
+    "chai": "^4.3.6",
     "ethereum-universal-forwarder-1.0.0": "git+https://github.com/animoca/universal-forwarder.git",
+    "ethereumjs-util": "^7.1.5",
     "ethereumjs-wallet": "^1.0.1",
-    "hardhat": "^2.6.2"
+    "hardhat": "^2.6.2",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.2.32",
+    "openzeppelin-test-helpers": "^0.5.1"
   },
   "peerDependencies": {
     "@animoca/ethereum-hardhat-bootstrap": "^1.0.1"

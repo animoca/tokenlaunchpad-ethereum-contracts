@@ -5,6 +5,8 @@ pragma solidity >=0.7.6 <0.8.0;
 import {Sale, FixedPricesSale} from "@animoca/ethereum-contracts-sale-2.0.0/contracts/sale/FixedPricesSale.sol";
 import {Recoverable} from "@animoca/ethereum-contracts-core-1.1.2/contracts/utils/Recoverable.sol";
 
+import "@openzeppelin/contracts/cryptography/MerkleProof.sol";
+
 /**
  * @title TokenLaunchpad Vouchers Sale
  * A FixedPricesSale contract that handles the purchase and delivery of TokenLaunchpad vouchers.
@@ -36,6 +38,58 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         uint256 tokensPerSkuCapacity
     ) FixedPricesSale(payoutWallet, skusCapacity, tokensPerSkuCapacity) {
         vouchersContract = vouchersContract_;
+    }
+
+    //merkleRoot 
+    bytes32 public merkleRoot;
+
+    //SKU -> user address => block number
+    mapping(bytes32 => mapping(address => uint256)) public CoolOff;
+
+    uint256 public coolOffPeriod;
+
+    function setCoolOffTime(uint256 _coolOffPeriod) public {
+        _requireOwnership(_msgSender());
+        coolOffPeriod = _coolOffPeriod;
+    }
+
+    function setMerkleRoot(bytes32 _merkleRoot) public {
+        _requireOwnership(_msgSender());
+        merkleRoot = _merkleRoot;
+    }
+
+    function purchaseFor(
+        address payable recipient,
+        address token,
+        bytes32 sku,
+        uint256 quantity,
+        bytes calldata userData,
+        bytes32[] calldata merkleProof
+    ) public payable whenStarted {
+        require(MerkleProof.verify(merkleProof, merkleRoot, keccak256(abi.encodePacked(msg.sender))), "Sale: invalid merkle proof");
+        require(CoolOff[sku][msg.sender] < block.number + CoolOff[sku][msg.sender], "Sale: cool off period is not over");
+        CoolOff[sku][msg.sender] += block.number + coolOffPeriod;
+
+        _requireNotPaused();
+        PurchaseData memory purchase;
+        purchase.purchaser = _msgSender();
+        purchase.recipient = recipient;
+        purchase.token = token;
+        purchase.sku = sku;
+        purchase.quantity = quantity;
+        purchase.userData = userData;
+
+        _purchaseFor(purchase);
+    }
+
+    function purchaseFor(
+        address payable recipient,
+        address token,
+        bytes32 sku,
+        uint256 quantity,
+        bytes calldata userData
+    ) public payable override whenStarted {
+        require(false, "Deprecated function");
     }
 
     /**
