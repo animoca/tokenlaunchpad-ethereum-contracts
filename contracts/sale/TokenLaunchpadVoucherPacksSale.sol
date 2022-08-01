@@ -22,6 +22,15 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
 
     mapping(bytes32 => SkuAdditionalInfo) internal _skuAdditionalInfo;
 
+    //SKU -> user address => block number of last purchase
+    mapping(bytes32 => mapping(address => uint256)) public CoolOff;
+
+    //The number of blocks the user has to wait for before purchasing again
+    uint256 public coolOffPeriod;
+
+    //Root of Merkle Tree
+    bytes32 public merkleRoot;
+
     /**
      * Constructor.
      * @dev Emits the `MagicValues` event.
@@ -40,24 +49,29 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         vouchersContract = vouchersContract_;
     }
 
-    //merkleRoot 
-    bytes32 public merkleRoot;
-
-    //SKU -> user address => block number
-    mapping(bytes32 => mapping(address => uint256)) public CoolOff;
-
-    uint256 public coolOffPeriod;
-
+    /**
+     * Sets the block number that has to pass between 2 purchases by the same user
+     * @param _coolOffPeriod The number of blocks
+     */
     function setCoolOffTime(uint256 _coolOffPeriod) public {
         _requireOwnership(_msgSender());
         coolOffPeriod = _coolOffPeriod;
     }
 
+    /**
+     * Sets the Merkle root based on KYC addresses
+     * @param _merkleRoot The merkle root
+     */
     function setMerkleRoot(bytes32 _merkleRoot) public {
         _requireOwnership(_msgSender());
         merkleRoot = _merkleRoot;
     }
 
+    /**
+     * Buys a voucher
+     * @dev Overloads inherited function
+     * @param merkleProof Merkle proof of leaf address
+     */
     function purchaseFor(
         address payable recipient,
         address token,
@@ -82,6 +96,9 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         _purchaseFor(purchase);
     }
 
+    /**
+     * @dev Overrides inherited function
+     */
     function purchaseFor(
         address payable recipient,
         address token,
