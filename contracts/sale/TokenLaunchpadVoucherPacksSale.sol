@@ -67,8 +67,8 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         bytes32[] calldata merkleProof
     ) public payable whenStarted {
         require(MerkleProof.verify(merkleProof, merkleRoot, keccak256(abi.encodePacked(msg.sender))), "Sale: invalid merkle proof");
-        require(CoolOff[sku][msg.sender] < block.number + CoolOff[sku][msg.sender], "Sale: cool off period is not over");
-        CoolOff[sku][msg.sender] += block.number + coolOffPeriod;
+        require(CoolOff[sku][msg.sender] + coolOffPeriod < block.number, "Sale: cool off period is not over");
+        CoolOff[sku][msg.sender] = block.number;
 
         _requireNotPaused();
         PurchaseData memory purchase;
@@ -89,7 +89,7 @@ contract TokenLaunchpadVoucherPacksSale is FixedPricesSale, Recoverable {
         uint256 quantity,
         bytes calldata userData
     ) public payable override whenStarted {
-        require(false, "Deprecated function");
+        require(false, "Sale: Deprecated function");
     }
 
     /**
